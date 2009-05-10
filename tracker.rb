@@ -7,48 +7,41 @@
 # ToDo: Correctly return comple and incomplete values
 # ToDo: Add failure handling and return failure reason
 get "/announce" do
+  # content_type "text/plain"
   case params[:event]
     when "started"    then started
     when "stopped"    then stopped
     when "completed"  then completed
     when nil          then regular
-    else "Invalid request"
+    else invalid_event_response
   end
-
-  response = {
-    "interval"        => 60,
-    "peers"           => peers(params[:numwant].to_i)
-  }.bencode
-  puts "=== RESPONSE ==="
-  pp response
-  return response
 end
 
 # ToDo: Find out about corrupt, compact and key values sent by transmission
 def started
-  puts "=== STARTED ==="
-  peer = Peer.create  :info_hash  => params[:info_hash],
-                      :peer_id    => params[:peer_id],
-                      :port       => params[:port],
-                      :uploaded   => params[:uploaded],
-                      :downloaded => params[:downloaded],
-                      :left       => params[:left],
-                      :ip         => (params[:ip] || "")
+  Peer.create :info_hash  => params[:info_hash],
+              :peer_id    => params[:peer_id],
+              :port       => params[:port],
+              :uploaded   => params[:uploaded],
+              :downloaded => params[:downloaded],
+              :left       => params[:left],
+              :ip         => (params[:ip] || "")
+  peer_list_response
 end
 
 def stopped
-  puts "=== STOPPED ==="
   peer = Peer.first :info_hash  => params[:info_hash],
                     :peer_id    => params[:peer_id]
   peer.destroy
+  peer_list_response
 end
 
 def completed
-  puts "=== COMPLETED ==="
+  peer_list_response
 end
 
 def regular
-  puts "=== REGULAR ==="
+  peer_list_response
 end
 
 def peers(numwant)
@@ -56,3 +49,13 @@ def peers(numwant)
   Peer.all(:limit => numwant).to_a
 end
 
+def peer_list_response
+  response = {
+    "interval"        => 60,
+    "peers"           => peers(params[:numwant].to_i)
+  }.bencode
+end
+
+def invalid_event_response
+  {"failure reason" => "Invalid Event"}.bencode
+end
