@@ -38,6 +38,9 @@ end
 
 def stopped
   puts "=== STOPPED ==="
+  peer = Peer.first :info_hash  => params[:info_hash],
+                    :peer_id    => params[:peer_id]
+  peer.destroy
 end
 
 def completed
